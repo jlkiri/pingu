@@ -1,14 +1,14 @@
 mod ipv4;
 
 use libc;
+use libc::c_void;
 use pnet::packet::icmp::IcmpType;
 use pnet::packet::icmp::IcmpTypes::EchoRequest;
 use pnet::packet::icmp::*;
 use pnet::packet::*;
 use pnet::util::checksum;
 use pnet_sys::setsockopt;
-use pnet_sys::IPPROTO_IP;
-use pnet_sys::IP_HDRINCL;
+
 use pretty_hex::*;
 use smoltcp::socket::SocketRef;
 use smoltcp::wire::{Icmpv4Message, IpProtocol};
@@ -16,9 +16,11 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::Read;
 use std::mem::{self, MaybeUninit};
 use std::net::{IpAddr, Ipv4Addr, SocketAddrV4, TcpListener};
-use std::os::windows::prelude::AsRawSocket;
-use byteorder::*;
+use std::os::unix::prelude::AsRawFd;
+// use std::os::windows::prelude::AsRawSocket;
 use byteorder::NetworkEndian;
+use byteorder::*;
+mod settings;
 
 const IPV4_MAX_PACKET_SIZE: usize = 65535;
 const ICMP_MAX_PACKET_SIZE: usize = 65507;
@@ -31,15 +33,7 @@ fn main() -> anyhow::Result<()> {
     let mut ip: [u8; 52] = [0u8; 52];
     let mut icmp_buf = [0u8; 32];
 
-    unsafe {
-        setsockopt(
-            socket.as_raw_socket() as usize,
-            IPPROTO_IP,
-            IP_HDRINCL,
-            1 as *const i8,
-            mem::size_of::<*const i8>() as i32,
-        );
-    }
+    settings::include_ip_header(&socket, true);
 
     /* socket.bind(&SockAddr::from(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0))).expect("failed bind.");
 
@@ -75,7 +69,7 @@ fn main() -> anyhow::Result<()> {
     45 00 00 ??
     ab cd 00 00
     40 01 ?? ??
-    00 00 00 00 
+    00 00 00 00
     08 08 08 08
     */
 
@@ -87,7 +81,7 @@ fn main() -> anyhow::Result<()> {
     NetworkEndian::write_u32(&mut ip[16..=19], 0x08080808);
 
     let icmp_pkt = icmp_packet.packet();
-    
+
     for i in 0..52 - 20 {
         ip[i + 20] = icmp_pkt[i].to_be();
     }
@@ -97,13 +91,16 @@ fn main() -> anyhow::Result<()> {
 
     println!("{:?}", pkt.hex_dump());
 
-
     //loop {
     // let len = socket.send_to(unsafe { any_as_u8_slice(&icmp_packet) }, &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into())?;
     let len = socket.send_to(
         &pkt.into_inner(),
         &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into(),
     )?;
+    /* let len = socket.send_to(
+        icmp_packet.packet(),
+        &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into(),
+    )?; */
     // let len = socket.send(&ipv4packet.into_inner())?;
     println!("{} sent", len);
     let (read_len, a) = socket.recv_from(&mut reply_buf)?;
