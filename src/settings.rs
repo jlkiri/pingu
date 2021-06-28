@@ -22,17 +22,21 @@ pub fn include_ip_header(socket: &Socket, value: bool) {
 }
 
 #[cfg(target_os = "windows")]
-pub fn include_ip_header(socket: &Socket, value: bool) {
-    use std::os::windows::prelude::AsRawSocket;
+pub fn include_ip_header(socket: &Socket, value: &bool) {
+    use std::{os::windows::prelude::AsRawSocket};
+    use libc::c_char;
+
+    let opt = value as *const bool as *const c_char;
+
     unsafe {
         if let -1 = setsockopt(
             socket.as_raw_socket() as usize,
             IPPROTO_IP,
             IP_HDRINCL,
-            &value as *const _ as *const i8,
-            mem::size_of::<*const i8>() as i32,
+            opt,
+            mem::size_of::<bool>() as i32
         ) {
-            panic!("setsockopt failed.");
+            panic!("{}", std::io::Error::last_os_error());
         }
     }
 }

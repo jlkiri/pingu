@@ -16,7 +16,6 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::io::Read;
 use std::mem::{self, MaybeUninit};
 use std::net::{IpAddr, Ipv4Addr, SocketAddrV4, TcpListener};
-use std::os::unix::prelude::AsRawFd;
 // use std::os::windows::prelude::AsRawSocket;
 use byteorder::NetworkEndian;
 use byteorder::*;
@@ -33,7 +32,9 @@ fn main() -> anyhow::Result<()> {
     let mut ip: [u8; 52] = [0u8; 52];
     let mut icmp_buf = [0u8; 32];
 
-    settings::include_ip_header(&socket, true);
+    let opt = true;
+
+    settings::include_ip_header(&socket, &opt);
 
     /* socket.bind(&SockAddr::from(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0))).expect("failed bind.");
 
@@ -72,6 +73,14 @@ fn main() -> anyhow::Result<()> {
     00 00 00 00
     08 08 08 08
     */
+
+    /* let local_addr = *socket
+        .local_addr()?
+        .as_socket_ipv4()
+        .unwrap_or_else(|| panic!("Not a IPv4 socket!"))
+        .ip();
+
+    println!("local addr: {}", local_addr); */
 
     ip[0] = 0x45;
     NetworkEndian::write_u16(&mut ip[2..=3], icmp_packet.packet().len() as u16);
