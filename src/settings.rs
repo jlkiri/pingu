@@ -6,14 +6,14 @@ use socket2::Socket;
 use std::mem;
 
 #[cfg(target_os = "linux")]
-pub fn include_ip_header(socket: &Socket, value: bool) {
+pub fn include_ip_header(socket: &Socket, value: &bool) {
     use std::os::unix::prelude::AsRawFd;
     unsafe {
         if let -1 = setsockopt(
             socket.as_raw_fd(),
             IPPROTO_IP,
             IP_HDRINCL,
-            &value as *const _ as *const c_void,
+            value as *const _ as *const c_void,
             mem::size_of::<*const c_void>() as u32,
         ) {
             panic!("setsockopt failed.");

@@ -117,11 +117,7 @@ fn main() -> anyhow::Result<()> {
     // println!("response: {:?}", &readable_buf[..read_len]);
     let reply_packet = IcmpPacket::new(&readable_buf[..read_len]).expect("FAIL");
     let d = &readable_buf[..read_len];
-    let payload = &readable_buf[9..read_len];
-    println!("Received bytes: {}", read_len);
     println!("{:?}", d.hex_dump());
-    println!("{:?}", payload.hex_dump());
-    println!("{}", String::from_utf8_lossy(reply_packet.payload()));
 
     Ok(())
 }
