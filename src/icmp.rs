@@ -28,7 +28,9 @@ pub struct Packet {
 
 impl Packet {
     pub fn new<T: AsRef<[u8]>>(buf: T) -> Self {
-        Self { buffer: buf.as_ref().to_vec() }
+        Self {
+            buffer: buf.as_ref().to_vec(),
+        }
     }
 
     pub fn as_buf(&self) -> &[u8] {
@@ -65,7 +67,7 @@ impl Packet {
 
     pub fn fill_checksum(&mut self) {
         let buf = self.buffer.as_mut();
-        let checksum = checksum(&buf, 2);
+        let checksum = checksum(&buf, 1);
         NetworkEndian::write_u16(&mut buf[field::CHECKSUM], checksum);
     }
 

@@ -30,7 +30,9 @@ pub struct Packet {
 
 impl Packet {
     pub fn new<T: AsRef<[u8]>>(buf: T) -> Self {
-        Self { buffer: buf.as_ref().to_vec() }
+        Self {
+            buffer: buf.as_ref().to_vec(),
+        }
     }
 
     pub fn as_buf(&self) -> &[u8] {
