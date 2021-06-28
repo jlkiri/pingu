@@ -2,6 +2,9 @@ use std::{convert::TryInto, net::Ipv4Addr};
 
 use byteorder::{ByteOrder, NetworkEndian};
 use pnet::packet::util::checksum;
+use pretty_hex::*;
+
+use self::field::TTL;
 
 pub struct NextProtocol(u8);
 
@@ -10,6 +13,7 @@ impl NextProtocol {
 }
 
 mod field {
+    use std::ops::RangeFrom;
     type Field = std::ops::Range<usize>;
 
     pub const VER_IHL: usize = 0;
@@ -22,6 +26,7 @@ mod field {
     pub const CHECKSUM: Field = 10..12;
     pub const SRC_ADDR: Field = 12..16;
     pub const DST_ADDR: Field = 16..20;
+    pub const PAYLOAD: RangeFrom<usize> = 20..;
 }
 
 pub struct Packet {
@@ -35,12 +40,20 @@ impl Packet {
         }
     }
 
-    pub fn as_buf(&self) -> &[u8] {
-        &self.buffer
+    pub fn hex_dump(&self) -> Hex<Vec<u8>> {
+        self.buffer.hex_dump()
     }
 
-    pub fn into_buf(self) -> Vec<u8> {
+    pub fn payload(&self) -> &[u8] {
+        &self.buffer[field::PAYLOAD]
+    }
+
+    pub fn into_inner(self) -> Vec<u8> {
         self.buffer
+    }
+
+    pub fn ttl(&self) -> u8 {
+        self.buffer[TTL]
     }
 
     pub fn set_version(&mut self, version: u8) {
@@ -76,14 +89,14 @@ impl Packet {
 
     pub fn set_src(&mut self, addr: Ipv4Addr) {
         let buf = &mut self.buffer;
-        // NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], addr.try_into().unwrap());
-        NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], 0x00000000);
+        NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], addr.try_into().unwrap());
+        //NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], 0x00000000);
     }
 
     pub fn set_dest(&mut self, addr: Ipv4Addr) {
         let buf = &mut self.buffer;
-        // NetworkEndian::write_u32(&mut buf[field::DST_ADDR], addr.try_into().unwrap());
-        NetworkEndian::write_u32(&mut buf[field::DST_ADDR], 0x08080808);
+        NetworkEndian::write_u32(&mut buf[field::DST_ADDR], addr.try_into().unwrap());
+        //NetworkEndian::write_u32(&mut buf[field::DST_ADDR], 0x08080808);
     }
 
     pub fn fill_checksum(&mut self) {
