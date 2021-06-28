@@ -18,7 +18,7 @@ fn main() -> anyhow::Result<()> {
     icmp_packet.set_message_type(icmp::Message::EchoRequest);
     icmp_packet.set_code(icmp::Code::EchoRequest);
     icmp_packet.set_identifier(0xabcd);
-    icmp_packet.set_seq_number(1);
+    icmp_packet.set_seq_number(0);
     icmp_packet.set_payload("hello!");
     icmp_packet.fill_checksum();
 
@@ -33,15 +33,16 @@ fn main() -> anyhow::Result<()> {
     ip_packet.set_src(Ipv4Addr::new(0, 0, 0, 0));
     ip_packet.set_header_len(5);
     ip_packet.set_dest(Ipv4Addr::new(8, 8, 8, 8));
-    ip_packet.set_payload(icmp_packet.into_inner());
+    ip_packet.set_payload(icmp_packet.as_buf());
     ip_packet.set_total_length();
     ip_packet.fill_checksum();
 
     let mut reply_buf: [MaybeUninit<u8>; 128] = unsafe { MaybeUninit::uninit().assume_init() };
 
-    println!("{:?}", ip_packet.as_buf().hex_dump());
+    let buffed = ip_packet.as_buf();
+    println!("{:?}", buffed.hex_dump());
 
-    let len = socket.send_to(&ip_packet.into_inner(), &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into())?;
+    let len = socket.send_to(&buffed, &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into())?;
 
     let (read_len, a) = socket.recv_from(&mut reply_buf)?;
     let readable_buf: [u8; 128] = unsafe { std::mem::transmute(reply_buf) };

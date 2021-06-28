@@ -37,7 +37,7 @@ impl Packet {
         &self.buffer
     }
 
-    pub fn into_inner(self) -> Vec<u8> {
+    pub fn into_buf(self) -> Vec<u8> {
         self.buffer
     }
 
@@ -74,12 +74,14 @@ impl Packet {
 
     pub fn set_src(&mut self, addr: Ipv4Addr) {
         let buf = &mut self.buffer;
-        NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], addr.try_into().unwrap());
+        // NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], addr.try_into().unwrap());
+        NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], 0x00000000);
     }
 
     pub fn set_dest(&mut self, addr: Ipv4Addr) {
         let buf = &mut self.buffer;
-        NetworkEndian::write_u32(&mut buf[field::DST_ADDR], addr.try_into().unwrap());
+        // NetworkEndian::write_u32(&mut buf[field::DST_ADDR], addr.try_into().unwrap());
+        NetworkEndian::write_u32(&mut buf[field::DST_ADDR], 0x08080808);
     }
 
     pub fn fill_checksum(&mut self) {
@@ -89,8 +91,6 @@ impl Packet {
     }
 
     pub fn set_payload<T: AsRef<[u8]>>(&mut self, payload: T) {
-        let mut buf = self.buffer.clone();
-        buf.extend_from_slice(payload.as_ref());
-        self.buffer = buf;
+        self.buffer.extend_from_slice(payload.as_ref());
     }
 }

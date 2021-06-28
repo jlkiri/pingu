@@ -31,6 +31,10 @@ impl Packet {
         Self { buffer: buf.as_ref().to_vec() }
     }
 
+    pub fn as_buf(&self) -> &[u8] {
+        &self.buffer
+    }
+
     pub fn into_inner(self) -> Vec<u8> {
         self.buffer
     }
@@ -66,8 +70,7 @@ impl Packet {
     }
 
     pub fn set_payload<T: AsRef<[u8]>>(&mut self, payload: T) {
-        let mut buf = self.buffer.clone();
-        buf.extend_from_slice(payload.as_ref());
-        self.buffer = buf;
+        let b = payload.as_ref();
+        self.buffer.extend_from_slice(b);
     }
 }
