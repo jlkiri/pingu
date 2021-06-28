@@ -23,8 +23,8 @@ pub fn include_ip_header(socket: &Socket, value: &bool) {
 
 #[cfg(target_os = "windows")]
 pub fn include_ip_header(socket: &Socket, value: &bool) {
-    use std::{os::windows::prelude::AsRawSocket};
     use libc::c_char;
+    use std::os::windows::prelude::AsRawSocket;
 
     let opt = value as *const bool as *const c_char;
 
@@ -34,7 +34,7 @@ pub fn include_ip_header(socket: &Socket, value: &bool) {
             IPPROTO_IP,
             IP_HDRINCL,
             opt,
-            mem::size_of::<bool>() as i32
+            mem::size_of::<bool>() as i32,
         ) {
             panic!("{}", std::io::Error::last_os_error());
         }
