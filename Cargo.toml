@@ -7,5 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-socket2 = "0.4.0"
+socket2 = { version = "0.4.0", features = ["all"] }
 libc = "0.2.97"
+pnet = "0.28.0"
+smoltcp = "0.7.4"
+anyhow = "1.0.41"
+pretty-hex = "0.2.1"
+pnet_sys = "0.28.0"
+byteorder = "1.4.3"
