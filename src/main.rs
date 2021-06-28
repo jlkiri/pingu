@@ -26,6 +26,8 @@ const ICMP_MAX_PACKET_SIZE: usize = 65507;
 
 use smoltcp::wire::Ipv4Packet;
 
+use crate::ipv4::ipv4_checksum;
+
 fn main() -> anyhow::Result<()> {
     let mut socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::ICMPV4.into())?;
 
@@ -35,27 +37,6 @@ fn main() -> anyhow::Result<()> {
     let opt = true;
 
     settings::include_ip_header(&socket, &opt);
-
-    /* socket.bind(&SockAddr::from(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0))).expect("failed bind.");
-
-    loop {
-        let len = socket.read(&mut buf)?;
-        println!("{:?}", &buf[..len]);
-    } */
-
-    /* let mut ipv4packet = Ipv4Packet::new_checked(buf).expect("Failed to construct an IPv4 packet.");
-    let local_addr = *socket
-        .local_addr()?
-        .as_socket_ipv4()
-        .unwrap_or_else(|| panic!("Not a IPv4 socket!"))
-        .ip();
-
-    println!("{}",local_addr);
-    ipv4packet.set_src_addr(smoltcp::wire::Ipv4Address::from(local_addr));
-    ipv4packet.set_dst_addr(smoltcp::wire::Ipv4Address::from_bytes(&[8, 8, 8, 8]));
-    ipv4packet.set_protocol(IpProtocol::Icmp);
-    ipv4packet.set_version(4);
-    ipv4packet.set_header_len(20); */
 
     let mut icmp_packet =
         MutableIcmpPacket::new(&mut icmp_buf).expect("Failed to construct an ICMP packet.");
@@ -73,15 +54,6 @@ fn main() -> anyhow::Result<()> {
     00 00 00 00
     08 08 08 08
     */
-
-    /* let local_addr = *socket
-        .local_addr()?
-        .as_socket_ipv4()
-        .unwrap_or_else(|| panic!("Not a IPv4 socket!"))
-        .ip();
-
-    println!("local addr: {}", local_addr); */
-
     ip[0] = 0x45;
     NetworkEndian::write_u16(&mut ip[2..=3], icmp_packet.packet().len() as u16);
     NetworkEndian::write_u16(&mut ip[4..=5], 0xabcd);
@@ -95,29 +67,26 @@ fn main() -> anyhow::Result<()> {
         ip[i + 20] = icmp_pkt[i].to_be();
     }
 
-    let mut pkt = Ipv4Packet::new_checked(ip).expect("Dderp");
-    pkt.fill_checksum();
+    /* let mut pkt = Ipv4Packet::new_checked(ip).expect("Dderp");
+    pkt.fill_checksum(); */
 
-    println!("{:?}", pkt.hex_dump());
+    let chksm = ipv4_checksum(&ip);
+    NetworkEndian::write_u16(&mut ip[10..=11], chksm);
 
-    //loop {
-    // let len = socket.send_to(unsafe { any_as_u8_slice(&icmp_packet) }, &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into())?;
+
+    println!("{:?}", ip.hex_dump());
+
     let len = socket.send_to(
-        &pkt.into_inner(),
+        &ip,
         &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into(),
     )?;
-    /* let len = socket.send_to(
-        icmp_packet.packet(),
-        &SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 0).into(),
-    )?; */
-    // let len = socket.send(&ipv4packet.into_inner())?;
-    println!("{} sent", len);
+
     let (read_len, a) = socket.recv_from(&mut reply_buf)?;
     let readable_buf: [u8; 128] = unsafe { std::mem::transmute(reply_buf) };
-    // println!("response: {:?}", &readable_buf[..read_len]);
-    let reply_packet = IcmpPacket::new(&readable_buf[..read_len]).expect("FAIL");
+    let reply_packet = IcmpPacket::new(&readable_buf[20..read_len]).expect("FAIL");
     let d = &readable_buf[..read_len];
     println!("{:?}", d.hex_dump());
+    println!("{}", String::from_utf8_lossy(reply_packet.payload()));
 
     Ok(())
 }
