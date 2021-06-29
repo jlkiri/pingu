@@ -1,4 +1,4 @@
-use byteorder::{ByteOrder, NativeEndian, NetworkEndian};
+use byteorder::{ByteOrder, NetworkEndian};
 use pnet::packet::util::checksum;
 use pretty_hex::*;
 

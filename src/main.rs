@@ -1,6 +1,7 @@
 mod icmp;
 mod ipv4;
 mod settings;
+mod util;
 
 use icmp::{Code, Message};
 use settings::include_ip_header;
@@ -11,6 +12,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process::exit;
 use std::time::Duration;
 use std::time::Instant;
+use util::local_addr;
 
 const PAYLOAD: &'static str = "banana";
 
@@ -34,15 +36,14 @@ fn main() -> anyhow::Result<()> {
         icmp_packet.set_payload(PAYLOAD);
         icmp_packet.fill_checksum();
 
-        let opt = true;
-        include_ip_header(&socket, &opt);
+        include_ip_header(&socket, true);
 
         let mut ip_packet = ipv4::Packet::new([0u8; 20]);
         ip_packet.set_version(4);
         ip_packet.set_ttl(64);
         ip_packet.set_identifier(0x4321);
         ip_packet.set_protocol(ipv4::NextProtocol::ICMP);
-        ip_packet.set_src(Ipv4Addr::new(0, 0, 0, 0));
+        ip_packet.set_src(local_addr());
         ip_packet.set_header_len(5);
         ip_packet.set_dest(str::parse::<Ipv4Addr>(&addr)?);
         ip_packet.set_payload(icmp_packet.into_inner());
@@ -54,7 +55,7 @@ fn main() -> anyhow::Result<()> {
 
         let start = Instant::now();
 
-        let bytes_sent = socket.send_to(&ip_packet.into_inner(), &remote_addr.into())?;
+        socket.send_to(&ip_packet.into_inner(), &remote_addr.into())?;
 
         let (bytes_received, a) = socket.recv_from(&mut reply_buf)?;
 
@@ -62,6 +63,7 @@ fn main() -> anyhow::Result<()> {
         let response_buf: [u8; 1024] = unsafe { std::mem::transmute(reply_buf) };
         let response_ip_pkt = ipv4::Packet::new(&response_buf[..bytes_received]);
         let response_icmp_pkt = icmp::Packet::new(response_ip_pkt.payload());
+        
         println!(
             "{} bytes from {}: icmp_seq={} ttl={} time={}",
             bytes_received,

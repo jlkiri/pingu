@@ -1,4 +1,3 @@
-use libc::c_void;
 use pnet_sys::setsockopt;
 use pnet_sys::IPPROTO_IP;
 use pnet_sys::IP_HDRINCL;
@@ -22,11 +21,11 @@ pub fn include_ip_header(socket: &Socket, value: &bool) {
 }
 
 #[cfg(target_os = "windows")]
-pub fn include_ip_header(socket: &Socket, value: &bool) {
+pub fn include_ip_header(socket: &Socket, value: bool) {
     use libc::c_char;
     use std::os::windows::prelude::AsRawSocket;
 
-    let opt = value as *const bool as *const c_char;
+    let opt = &value as *const bool as *const c_char;
 
     unsafe {
         if let -1 = setsockopt(
@@ -34,7 +33,7 @@ pub fn include_ip_header(socket: &Socket, value: &bool) {
             IPPROTO_IP,
             IP_HDRINCL,
             opt,
-            mem::size_of::<bool>() as i32,
+            mem::size_of_val(&opt) as i32,
         ) {
             panic!("{}", std::io::Error::last_os_error());
         }
