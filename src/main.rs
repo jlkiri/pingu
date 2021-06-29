@@ -6,24 +6,28 @@ mod util;
 use icmp::{Code, Message};
 use settings::include_ip_header;
 use socket2::{Domain, Protocol, Socket, Type};
-use std::env;
 use std::mem::MaybeUninit;
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::process::exit;
 use std::time::Duration;
 use std::time::Instant;
+use structopt::StructOpt;
 use util::local_addr;
+
+/// A basic example
+#[derive(StructOpt, Debug)]
+#[structopt(name = "pingu")]
+struct Pingu {
+    /// Destination IP address.
+    addr: String,
+}
 
 const PAYLOAD: &'static str = "banana";
 
 fn main() -> anyhow::Result<()> {
-    let addr = env::args().nth(1).unwrap_or_else(|| {
-        println!("Usage: pingu <dest>");
-        exit(1);
-    });
+    let args = Pingu::from_args();
 
     let socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::ICMPV4.into())?;
-    let dest_ip = str::parse::<Ipv4Addr>(&addr)?;
+    let dest_ip = str::parse::<Ipv4Addr>(&args.addr)?;
     let mut icmp_seq = 0;
 
     loop {
@@ -64,7 +68,7 @@ fn main() -> anyhow::Result<()> {
         let response_buf: [u8; 1024] = unsafe { std::mem::transmute(reply_buf) };
         let response_ip_pkt = ipv4::Packet::new(&response_buf[..bytes_received]);
         let response_icmp_pkt = icmp::Packet::new(response_ip_pkt.payload());
-        
+
         println!(
             "{} bytes from {}: icmp_seq={} ttl={} time={}ms",
             bytes_received,

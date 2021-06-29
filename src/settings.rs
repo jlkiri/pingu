@@ -6,8 +6,8 @@ use std::mem;
 
 #[cfg(target_os = "linux")]
 pub fn include_ip_header(socket: &Socket, value: bool) {
-    use std::os::unix::prelude::AsRawFd;
     use libc::c_void;
+    use std::os::unix::prelude::AsRawFd;
     unsafe {
         if let -1 = setsockopt(
             socket.as_raw_fd(),
