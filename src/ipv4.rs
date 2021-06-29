@@ -90,13 +90,11 @@ impl Packet {
     pub fn set_src(&mut self, addr: Ipv4Addr) {
         let buf = &mut self.buffer;
         NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], addr.try_into().unwrap());
-        //NetworkEndian::write_u32(&mut buf[field::SRC_ADDR], 0x00000000);
     }
 
     pub fn set_dest(&mut self, addr: Ipv4Addr) {
         let buf = &mut self.buffer;
         NetworkEndian::write_u32(&mut buf[field::DST_ADDR], addr.try_into().unwrap());
-        //NetworkEndian::write_u32(&mut buf[field::DST_ADDR], 0x08080808);
     }
 
     pub fn fill_checksum(&mut self) {
