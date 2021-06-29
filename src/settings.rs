@@ -16,7 +16,7 @@ pub fn include_ip_header(socket: &Socket, value: bool) {
             &value as *const _ as *const c_void,
             mem::size_of::<*const c_void>() as u32,
         ) {
-            panic!("setsockopt failed.");
+            panic!("{}", std::io::Error::last_os_error());
         }
     }
 }
